@@ -1,0 +1,244 @@
+:root {
+  --mime-multipart: #9e9e9e;
+  --mime-crypto: #ffb74d;
+
+  --mime-html-inline: #90caf9;
+  --mime-html-attach: #1565c0;
+
+  --mime-plain-inline: #a5d6a7;
+  --mime-plain-attach: #2e7d32;
+
+  --mime-othertext-inline: #80cbc4; /* turquoise: between blue and green */
+  --mime-othertext-attach: #00695c;
+
+  --mime-image-inline: #ce93d8; /* purple */
+  --mime-image-attach: #6a1b9a;
+
+  --mime-media-inline: #f48fb1; /* pink */
+  --mime-media-attach: #ad1457;
+
+  --mime-generic-inline: #d7ccc8; /* brown */
+  --mime-generic-attach: #6d4c41;
+
+  --mime-embedded: #ffffff;
+  --mime-line-color: #999999;
+}
+
+/* ---------------- container / handle / body ---------------- */
+
+.mime-tree-container {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2147483647;
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #fafafa;
+  border-top: 1px solid #ccc;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.mime-tree-handle {
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  background: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+  user-select: none;
+}
+
+.mime-tree-resize-handle {
+  height: 5px;
+  cursor: ns-resize;
+  background: transparent;
+}
+
+.mime-tree-container.collapsed .mime-tree-body,
+.mime-tree-container.collapsed .mime-tree-resize-handle {
+  display: none;
+}
+
+.mime-tree-body {
+  height: 220px;
+}
+
+.mime-tree-scroll {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.mime-tree-canvas {
+  position: relative;
+}
+
+.mime-tree-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.mime-connector-path {
+  stroke: var(--mime-line-color);
+  stroke-width: 2;
+  fill: none;
+}
+
+/* ---------------- tree layout: root left, growing right ---------------- */
+
+.mime-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.mime-children {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* ---------------- node chips ---------------- */
+
+.mime-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 118px;
+  height: 32px;
+  margin-right: 24px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+  line-height: 32px;
+  color: #1a1a1a;
+  cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.mime-node .mime-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mime-node .mime-badge {
+  flex: 0 0 auto;
+  font-weight: 700;
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+.mime-bold-border {
+  border-width: 3px;
+}
+
+.mime-node.mime-multipart { background: var(--mime-multipart); }
+.mime-node.mime-crypto { background: var(--mime-crypto); }
+
+.mime-node.mime-html.mime-shade-inline { background: var(--mime-html-inline); }
+.mime-node.mime-html.mime-shade-attachment { background: var(--mime-html-attach); color: #fff; }
+
+.mime-node.mime-plain.mime-shade-inline { background: var(--mime-plain-inline); }
+.mime-node.mime-plain.mime-shade-attachment { background: var(--mime-plain-attach); color: #fff; }
+
+.mime-node.mime-othertext.mime-shade-inline { background: var(--mime-othertext-inline); }
+.mime-node.mime-othertext.mime-shade-attachment { background: var(--mime-othertext-attach); color: #fff; }
+
+.mime-node.mime-image.mime-shade-inline { background: var(--mime-image-inline); }
+.mime-node.mime-image.mime-shade-attachment { background: var(--mime-image-attach); color: #fff; }
+
+.mime-node.mime-media.mime-shade-inline { background: var(--mime-media-inline); }
+.mime-node.mime-media.mime-shade-attachment { background: var(--mime-media-attach); color: #fff; }
+
+.mime-node.mime-generic.mime-shade-inline { background: var(--mime-generic-inline); }
+.mime-node.mime-generic.mime-shade-attachment { background: var(--mime-generic-attach); color: #fff; }
+
+.mime-node.mime-embedded { background: var(--mime-embedded); border-color: #333; }
+
+.mime-node.mime-group-chip {
+  width: auto;
+  min-width: 90px;
+  justify-content: center;
+  background: #eeeeee;
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.mime-node.mime-group-chip:hover {
+  background: #e0e0e0;
+}
+
+/* ---------------- scroll-room spacer appended to the message body ---------------- */
+
+.mime-tree-body-spacer {
+  display: block;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* ---------------- tooltip ---------------- */
+
+.mime-tree-tooltip {
+  position: fixed;
+  z-index: 2147483647;
+  max-width: 420px;
+  max-height: 320px;
+  overflow: auto;
+  background: #222;
+  color: #eee;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+}
+
+.mime-tooltip-title {
+  font-weight: 700;
+  font-size: 12.5px;
+  margin-bottom: 4px;
+}
+
+.mime-tooltip-size {
+  opacity: 0.75;
+  margin-bottom: 6px;
+}
+
+.mime-tooltip-headers {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mime-tooltip-header-line {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.mime-tooltip-header-name {
+  font-style: italic;
+  color: #b9b9b9;
+}
+
+.mime-tooltip-header-value {
+  font-style: normal;
+  color: #f2f2f2;
+}
+
+.mime-tooltip-hidden-note {
+  opacity: 0.55;
+  font-style: italic;
+  margin-top: 4px;
+}

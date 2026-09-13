@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "MIME Tree Viewer",
+  "version": "0.1.5",
+  "description": "Shows a collapsible MIME structure tree at the bottom of the message view, with a breadth-first numbered, color-coded tree and header tooltips.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "mime-tree-viewer@example.invalid",
+      "strict_min_version": "155.0"
+    }
+  },
+  "permissions": ["messagesRead", "storage", "scripting"],
+  "background": {
+    "scripts": ["mime/colors.js", "mime/bfs.js", "background.js"]
+  }
+}
