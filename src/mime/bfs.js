@@ -44,11 +44,14 @@ var MimeBfs = (function () {
         name: part.name || null,
         size: typeof part.size === "number" ? part.size : null,
         headers: collectHeaders(part),
-        // Only kept for special-cased parts (e.g. text/x-moz-deleted, whose
-        // body text names the original attachment's headers) -- not used
-        // for display of ordinary parts, so no size/privacy concern beyond
-        // what getFull() already exposed to this extension.
+        // getFull() only returns a text `body` for parts it renders inline
+        // (e.g. text/plain, text/html); parts with Content-Disposition:
+        // attachment -- which includes text/x-moz-deleted placeholders --
+        // come back with body === null regardless of their content-type.
+        // partName lets the background page fetch that content separately
+        // via messages.getAttachmentFile() and fill `body` in afterwards.
         body: typeof part.body === "string" ? part.body : null,
+        partName: part.partName || null,
         isRoot: !!isRoot,
         children: groupRepeatedSiblings(children, groupThreshold),
       };

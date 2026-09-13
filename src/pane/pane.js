@@ -295,19 +295,6 @@
   function buildChip(node) {
     const chip = document.createElement("div");
     const cls = MimeColors.classify(node.contentType, node.headers, node.body);
-    // TEMP DEBUG (bug 2 investigation): dump exactly what Thunderbird gave
-    // us for a deleted-attachment placeholder's body, so we can see why
-    // parseDeletedAttachmentInfo() isn't recovering the original
-    // content-type on this build/message. Remove once fixed.
-    if (MimeColors.baseContentType(node.contentType) === "text/x-moz-deleted") {
-      debugLog(
-        "deleted-part body for bfsIndex",
-        node.bfsIndex,
-        ":",
-        JSON.stringify(node.body),
-      );
-      debugLog("deleted-part classify() result:", JSON.stringify(cls));
-    }
     let className = `mime-node mime-${cls.family}`;
     if (cls.shade) className += ` mime-shade-${cls.shade}`;
     if (node.isRoot) className += " mime-bold-border";
