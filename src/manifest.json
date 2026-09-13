@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MIME Tree Viewer",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Shows a collapsible MIME structure tree at the bottom of the message view, with a breadth-first numbered, color-coded tree and header tooltips.",
   "browser_specific_settings": {
     "gecko": {

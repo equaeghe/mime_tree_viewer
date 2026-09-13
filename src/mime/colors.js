@@ -160,5 +160,5 @@ var MimeColors = (function () {
     return subtype.length > 12 ? subtype.slice(0, 11) + "\u2026" : subtype;
   }
 
-  return { classify, shortLabel, getDisposition };
+  return { classify, shortLabel, getDisposition, baseContentType };
 })();
