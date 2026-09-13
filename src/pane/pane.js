@@ -1,19 +1,26 @@
 (function () {
   if (window.__mimeTreePaneInitialized) {
-    console.log('[MIME Tree Viewer/pane] already initialized in this document, skipping');
+    console.log(
+      "[MIME Tree Viewer/pane] already initialized in this document, skipping",
+    );
     return;
   }
   window.__mimeTreePaneInitialized = true;
 
-  // Sizing: the default pane height fits ~4 sibling nodes plus a little
+  // Sizing: the default pane height fits ~3 sibling nodes plus a little
   // breathing room, so a typical small tree is fully visible and a larger
   // one gets a visible scrollbar rather than growing the pane indefinitely.
+  // (Previously 4 rows; dropped to 3 -- a ~quarter reduction in the row
+  // count that drives this calculation -- to make the pane less tall.)
   const NODE_HEIGHT = 32; // keep in sync with .mime-node height in pane.css
   const NODE_GAP = 10; // keep in sync with .mime-children gap in pane.css
   const SCROLL_PADDING = 16; // keep in sync with .mime-tree-scroll padding
-  const VISIBLE_ROWS = 4;
+  const VISIBLE_ROWS = 3;
   const DEFAULT_HEIGHT =
-    VISIBLE_ROWS * NODE_HEIGHT + (VISIBLE_ROWS - 1) * NODE_GAP + SCROLL_PADDING * 2 + 20;
+    VISIBLE_ROWS * NODE_HEIGHT +
+    (VISIBLE_ROWS - 1) * NODE_GAP +
+    SCROLL_PADDING * 2 +
+    20;
   const MIN_HEIGHT = 80;
   const MAX_HEIGHT = 600;
 
@@ -29,18 +36,18 @@
   // list freely; '*' matches any run of characters, matching is
   // case-insensitive, and each pattern matches a whole header name.
   const ROOT_HEADER_HIDE_PATTERNS = [
-    'received',
-    'dkim-*',
-    'arc-*',
-    'x-me-*',
-    'x-ms-*',
+    "received",
+    "dkim-*",
+    "arc-*",
+    "x-me-*",
+    "x-ms-*",
   ];
 
   const ROOT_HEADER_HIDE_REGEXPS = ROOT_HEADER_HIDE_PATTERNS.map((pattern) => {
     const escaped = pattern
       .toLowerCase()
-      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-      .replace(/\*/g, '.*');
+      .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/\*/g, ".*");
     return new RegExp(`^${escaped}$`);
   });
 
@@ -50,7 +57,15 @@
   }
 
   let currentTree = null;
-  let container, handle, body, scrollArea, canvas, svg, treeRoot, tooltip, bodySpacer;
+  let container,
+    handle,
+    body,
+    scrollArea,
+    canvas,
+    svg,
+    treeRoot,
+    tooltip,
+    bodySpacer;
   let partCount = 0;
   let maxDepth = 0;
 
@@ -59,75 +74,79 @@
     // Toolbox) AND relays to the background page's console (reachable via
     // Debug Add-ons -> Inspect), since the message document itself has no
     // accessible inspector by default.
-    console.log('[MIME Tree Viewer/pane]', ...args);
-    browser.runtime.sendMessage({ type: 'MIME_TREE_DEBUG', args }).catch(() => {});
+    console.log("[MIME Tree Viewer/pane]", ...args);
+    browser.runtime
+      .sendMessage({ type: "MIME_TREE_DEBUG", args })
+      .catch(() => {});
   }
 
   function init() {
-    debugLog('pane init() running, document =', document.location.href);
+    debugLog("pane init() running, document =", document.location.href);
     buildContainer();
     ensureBodySpacer();
     restoreState().then(requestTree);
   }
 
   async function requestTree() {
-    debugLog('requesting tree...');
+    debugLog("requesting tree...");
     try {
-      const response = await browser.runtime.sendMessage({ type: 'MIME_TREE_REQUEST' });
-      debugLog('got response:', response);
+      const response = await browser.runtime.sendMessage({
+        type: "MIME_TREE_REQUEST",
+      });
+      debugLog("got response:", response);
       currentTree = (response && response.tree) || null;
     } catch (e) {
-      debugLog('request failed:', String(e));
+      debugLog("request failed:", String(e));
       currentTree = null;
     }
     renderTree();
   }
 
   function buildContainer() {
-    container = document.createElement('div');
-    container.className = 'mime-tree-container';
+    container = document.createElement("div");
+    container.className = "mime-tree-container";
 
-    handle = document.createElement('div');
-    handle.className = 'mime-tree-handle';
-    handle.textContent = 'MIME tree';
-    handle.addEventListener('click', toggleCollapsed);
+    handle = document.createElement("div");
+    handle.className = "mime-tree-handle";
+    handle.textContent = "MIME tree";
+    handle.addEventListener("click", toggleCollapsed);
     container.appendChild(handle);
 
-    const resizeHandle = document.createElement('div');
-    resizeHandle.className = 'mime-tree-resize-handle';
-    resizeHandle.addEventListener('mousedown', startResize);
+    const resizeHandle = document.createElement("div");
+    resizeHandle.className = "mime-tree-resize-handle";
+    resizeHandle.addEventListener("mousedown", startResize);
     container.appendChild(resizeHandle);
 
-    body = document.createElement('div');
-    body.className = 'mime-tree-body';
-    scrollArea = document.createElement('div');
-    scrollArea.className = 'mime-tree-scroll';
+    body = document.createElement("div");
+    body.className = "mime-tree-body";
+    scrollArea = document.createElement("div");
+    scrollArea.className = "mime-tree-scroll";
 
     // canvas wraps both the SVG connector overlay and the actual chip tree,
     // in the same coordinate space, so connector geometry never has to be
     // reconciled across separately-styled elements.
-    canvas = document.createElement('div');
-    canvas.className = 'mime-tree-canvas';
+    canvas = document.createElement("div");
+    canvas.className = "mime-tree-canvas";
 
-    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('class', 'mime-tree-svg');
+    svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "mime-tree-svg");
     canvas.appendChild(svg);
 
-    treeRoot = document.createElement('div');
-    treeRoot.className = 'mime-tree-root';
+    treeRoot = document.createElement("div");
+    treeRoot.className = "mime-tree-root";
     canvas.appendChild(treeRoot);
 
     scrollArea.appendChild(canvas);
     body.appendChild(scrollArea);
     container.appendChild(body);
 
-    tooltip = document.createElement('div');
-    tooltip.className = 'mime-tree-tooltip';
+    tooltip = document.createElement("div");
+    tooltip.className = "mime-tree-tooltip";
     tooltip.hidden = true;
     container.appendChild(tooltip);
 
     document.documentElement.appendChild(container);
-    window.addEventListener('resize', debounce(drawConnectors, 150));
+    window.addEventListener("resize", debounce(drawConnectors, 150));
   }
 
   // ---- scroll-room spacer in the message body itself ----
@@ -140,8 +159,8 @@
 
   function ensureBodySpacer() {
     if (!document.body) return;
-    bodySpacer = document.createElement('div');
-    bodySpacer.className = 'mime-tree-body-spacer';
+    bodySpacer = document.createElement("div");
+    bodySpacer.className = "mime-tree-body-spacer";
     document.body.appendChild(bodySpacer);
     updateBodySpacer();
   }
@@ -157,28 +176,32 @@
   async function restoreState() {
     let stored = {};
     try {
-      stored = (await browser.runtime.sendMessage({ type: 'MIME_TREE_GET_STATE' })) || {};
+      stored =
+        (await browser.runtime.sendMessage({ type: "MIME_TREE_GET_STATE" })) ||
+        {};
     } catch (e) {
       // background not reachable yet / no stored state -- fall back to defaults
     }
-    const collapsed = stored['mimeTreePane.collapsed'] ?? false;
-    const height = stored['mimeTreePane.height'] ?? DEFAULT_HEIGHT;
-    container.classList.toggle('collapsed', collapsed);
+    const collapsed = stored["mimeTreePane.collapsed"] ?? false;
+    const height = stored["mimeTreePane.height"] ?? DEFAULT_HEIGHT;
+    container.classList.toggle("collapsed", collapsed);
     body.style.height = `${height}px`;
     updateHandleLabel();
     updateBodySpacer();
   }
 
   function persistState(partial) {
-    browser.runtime.sendMessage({ type: 'MIME_TREE_SET_STATE', state: partial }).catch(() => {});
+    browser.runtime
+      .sendMessage({ type: "MIME_TREE_SET_STATE", state: partial })
+      .catch(() => {});
   }
 
   function toggleCollapsed() {
-    const collapsed = !container.classList.contains('collapsed');
-    container.classList.toggle('collapsed', collapsed);
+    const collapsed = !container.classList.contains("collapsed");
+    container.classList.toggle("collapsed", collapsed);
     updateHandleLabel();
     updateBodySpacer();
-    persistState({ 'mimeTreePane.collapsed': collapsed });
+    persistState({ "mimeTreePane.collapsed": collapsed });
   }
 
   // ---- manual resize (drag the strip above the pane) ----
@@ -189,32 +212,37 @@
   function startResize(e) {
     resizeStartY = e.clientY;
     resizeStartHeight = body.getBoundingClientRect().height;
-    document.addEventListener('mousemove', onResizeMove);
-    document.addEventListener('mouseup', stopResize);
+    document.addEventListener("mousemove", onResizeMove);
+    document.addEventListener("mouseup", stopResize);
     e.preventDefault();
   }
 
   function onResizeMove(e) {
     const delta = resizeStartY - e.clientY; // dragging up grows the pane
-    const newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, resizeStartHeight + delta));
+    const newHeight = Math.min(
+      MAX_HEIGHT,
+      Math.max(MIN_HEIGHT, resizeStartHeight + delta),
+    );
     body.style.height = `${newHeight}px`;
     updateBodySpacer();
     drawConnectors();
   }
 
   function stopResize() {
-    document.removeEventListener('mousemove', onResizeMove);
-    document.removeEventListener('mouseup', stopResize);
+    document.removeEventListener("mousemove", onResizeMove);
+    document.removeEventListener("mouseup", stopResize);
     updateBodySpacer();
-    persistState({ 'mimeTreePane.height': body.getBoundingClientRect().height });
+    persistState({
+      "mimeTreePane.height": body.getBoundingClientRect().height,
+    });
   }
 
   // ---- rendering ----
 
   function renderTree() {
-    treeRoot.innerHTML = '';
+    treeRoot.innerHTML = "";
     if (!currentTree) {
-      svg.innerHTML = '';
+      svg.innerHTML = "";
       return;
     }
 
@@ -228,27 +256,31 @@
   }
 
   function updateHandleLabel() {
-    const arrow = container.classList.contains('collapsed') ? '\u25B8' : '\u25BE';
+    const arrow = container.classList.contains("collapsed")
+      ? "\u25B8"
+      : "\u25BE";
     const summary = partCount
-      ? `${partCount} part${partCount === 1 ? '' : 's'}, depth ${maxDepth}`
-      : 'no message loaded';
+      ? `${partCount} part${partCount === 1 ? "" : "s"}, depth ${maxDepth}`
+      : "no message loaded";
     handle.textContent = `${arrow} MIME tree \u2014 ${summary}`;
   }
 
   function buildRow(node) {
-    const row = document.createElement('div');
-    row.className = 'mime-row';
+    const row = document.createElement("div");
+    row.className = "mime-row";
 
     const chip = buildChip(node);
     const kids = node.children || [];
 
     if (kids.length) {
-      chip.classList.add('mime-has-children');
-      const col = document.createElement('div');
-      col.className = 'mime-children';
+      chip.classList.add("mime-has-children");
+      const col = document.createElement("div");
+      col.className = "mime-children";
 
       for (const child of kids) {
-        col.appendChild(child.isGroup ? buildGroupChip(child) : buildRow(child));
+        col.appendChild(
+          child.isGroup ? buildGroupChip(child) : buildRow(child),
+        );
       }
 
       row.appendChild(chip);
@@ -261,37 +293,45 @@
   }
 
   function buildChip(node) {
-    const chip = document.createElement('div');
-    const cls = MimeColors.classify(node.contentType, node.headers);
+    const chip = document.createElement("div");
+    const cls = MimeColors.classify(node.contentType, node.headers, node.body);
     let className = `mime-node mime-${cls.family}`;
     if (cls.shade) className += ` mime-shade-${cls.shade}`;
-    if (node.isRoot) className += ' mime-bold-border';
+    if (node.isRoot) className += " mime-bold-border";
+    if (cls.deleted) className += " mime-deleted";
     chip.className = className;
     chip.dataset.bfs = String(node.bfsIndex);
 
-    const badge = document.createElement('span');
-    badge.className = 'mime-badge';
+    const badge = document.createElement("span");
+    badge.className = "mime-badge";
     badge.textContent = `(${node.bfsIndex})`;
     chip.appendChild(badge);
 
-    const label = document.createElement('span');
-    label.className = 'mime-label';
-    label.textContent = MimeColors.shortLabel(node.contentType);
+    const label = document.createElement("span");
+    label.className = "mime-label";
+    // A deleted-attachment placeholder is colored/labeled as the original
+    // attachment it replaced (see MimeColors.classify), with strikethrough
+    // (from the .mime-deleted class) marking it as no longer present.
+    label.textContent = MimeColors.shortLabel(
+      cls.deleted && cls.originalContentType
+        ? cls.originalContentType
+        : node.contentType,
+    );
     chip.appendChild(label);
 
-    chip.addEventListener('mouseenter', (e) => showTooltip(e, node));
-    chip.addEventListener('mousemove', moveTooltip);
-    chip.addEventListener('mouseleave', hideTooltip);
+    chip.addEventListener("mouseenter", (e) => showTooltip(e, node));
+    chip.addEventListener("mousemove", moveTooltip);
+    chip.addEventListener("mouseleave", hideTooltip);
 
     return chip;
   }
 
   function buildGroupChip(group) {
-    const chip = document.createElement('div');
-    chip.className = 'mime-node mime-group-chip';
+    const chip = document.createElement("div");
+    chip.className = "mime-node mime-group-chip";
     chip.textContent = `+${group.count} \u00d7 ${MimeColors.shortLabel(group.contentType)}`;
-    chip.title = 'Click to expand';
-    chip.addEventListener('click', () => {
+    chip.title = "Click to expand";
+    chip.addEventListener("click", () => {
       const rows = group.items.map(buildRow);
       chip.replaceWith(...rows);
       drawConnectors();
@@ -318,19 +358,21 @@
 
   function collectLinks() {
     const links = [];
-    treeRoot.querySelectorAll('.mime-node.mime-has-children').forEach((chip) => {
-      const row = chip.parentElement;
-      const col = row && row.querySelector(':scope > .mime-children');
-      if (!col) return;
-      links.push({ parentChip: chip, childEls: Array.from(col.children) });
-    });
+    treeRoot
+      .querySelectorAll(".mime-node.mime-has-children")
+      .forEach((chip) => {
+        const row = chip.parentElement;
+        const col = row && row.querySelector(":scope > .mime-children");
+        if (!col) return;
+        links.push({ parentChip: chip, childEls: Array.from(col.children) });
+      });
     return links;
   }
 
   function anchorOf(el) {
     // A child slot is either a .mime-row (whose own first child is its
     // chip) or a bare .mime-node.mime-group-chip (already the anchor).
-    return el.classList.contains('mime-row') ? el.firstElementChild : el;
+    return el.classList.contains("mime-row") ? el.firstElementChild : el;
   }
 
   function drawConnectors() {
@@ -366,26 +408,28 @@
       }
     }
 
-    svg.setAttribute('width', canvas.scrollWidth);
-    svg.setAttribute('height', canvas.scrollHeight);
+    svg.setAttribute("width", canvas.scrollWidth);
+    svg.setAttribute("height", canvas.scrollHeight);
     svg.innerHTML = segments.length
-      ? `<path class="mime-connector-path" d="${segments.join(' ')}" />`
-      : '';
+      ? `<path class="mime-connector-path" d="${segments.join(" ")}" />`
+      : "";
   }
 
   // ---- tooltip ----
 
   function showTooltip(e, node) {
-    tooltip.innerHTML = '';
+    tooltip.innerHTML = "";
 
-    const title = document.createElement('div');
-    title.className = 'mime-tooltip-title';
-    title.textContent = node.name ? `${node.contentType} \u2014 ${node.name}` : node.contentType;
+    const title = document.createElement("div");
+    title.className = "mime-tooltip-title";
+    title.textContent = node.name
+      ? `${node.contentType} \u2014 ${node.name}`
+      : node.contentType;
     tooltip.appendChild(title);
 
-    if (typeof node.size === 'number') {
-      const size = document.createElement('div');
-      size.className = 'mime-tooltip-size';
+    if (typeof node.size === "number") {
+      const size = document.createElement("div");
+      size.className = "mime-tooltip-size";
       size.textContent = formatSize(node.size);
       tooltip.appendChild(size);
     }
@@ -402,8 +446,8 @@
 
   function moveTooltip(e) {
     const margin = 14;
-    tooltip.style.left = '0px';
-    tooltip.style.top = '0px';
+    tooltip.style.left = "0px";
+    tooltip.style.top = "0px";
     const rect = tooltip.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
@@ -416,8 +460,8 @@
   }
 
   function buildHeaderList(headers, isRoot) {
-    const container = document.createElement('div');
-    container.className = 'mime-tooltip-headers';
+    const container = document.createElement("div");
+    container.className = "mime-tooltip-headers";
 
     const allEntries = Object.entries(headers || {});
     const entries = isRoot
@@ -427,35 +471,35 @@
 
     if (!entries.length) {
       container.textContent = hiddenCount
-        ? `(${hiddenCount} routing/auth header${hiddenCount === 1 ? '' : 's'} hidden)`
-        : '(no headers on this part)';
+        ? `(${hiddenCount} routing/auth header${hiddenCount === 1 ? "" : "s"} hidden)`
+        : "(no headers on this part)";
       return container;
     }
 
     for (const [key, values] of entries) {
       for (const rawValue of values) {
-        const line = document.createElement('div');
-        line.className = 'mime-tooltip-header-line';
+        const line = document.createElement("div");
+        line.className = "mime-tooltip-header-line";
 
-        const nameEl = document.createElement('span');
-        nameEl.className = 'mime-tooltip-header-name';
+        const nameEl = document.createElement("span");
+        nameEl.className = "mime-tooltip-header-name";
         nameEl.textContent = key;
 
-        const valueEl = document.createElement('span');
-        valueEl.className = 'mime-tooltip-header-value';
-        valueEl.textContent = ' ' + unfoldHeaderValue(rawValue);
+        const valueEl = document.createElement("span");
+        valueEl.className = "mime-tooltip-header-value";
+        valueEl.textContent = " " + unfoldHeaderValue(rawValue);
 
         line.appendChild(nameEl);
-        line.appendChild(document.createTextNode(':'));
+        line.appendChild(document.createTextNode(":"));
         line.appendChild(valueEl);
         container.appendChild(line);
       }
     }
 
     if (hiddenCount) {
-      const note = document.createElement('div');
-      note.className = 'mime-tooltip-hidden-note';
-      note.textContent = `+ ${hiddenCount} routing/auth header${hiddenCount === 1 ? '' : 's'} hidden`;
+      const note = document.createElement("div");
+      note.className = "mime-tooltip-hidden-note";
+      note.textContent = `+ ${hiddenCount} routing/auth header${hiddenCount === 1 ? "" : "s"} hidden`;
       container.appendChild(note);
     }
 
@@ -467,7 +511,7 @@
   // (newlines, tabs, repeated spaces from the original indentation) down to
   // a single space so the value reads and wraps as one logical line.
   function unfoldHeaderValue(value) {
-    return String(value).replace(/\s+/g, ' ').trim();
+    return String(value).replace(/\s+/g, " ").trim();
   }
 
   function formatSize(bytes) {

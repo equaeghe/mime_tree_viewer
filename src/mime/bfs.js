@@ -11,7 +11,9 @@ var MimeBfs = (function () {
     const headers = part.headers || {};
     for (const key of Object.keys(headers)) {
       const val = headers[key];
-      out[key.toLowerCase()] = Array.isArray(val) ? val.map(String) : [String(val)];
+      out[key.toLowerCase()] = Array.isArray(val)
+        ? val.map(String)
+        : [String(val)];
     }
     return out;
   }
@@ -38,10 +40,15 @@ var MimeBfs = (function () {
       const children = (part.parts || []).map((p) => annotate(p, false));
       return {
         bfsIndex: numbering.get(part),
-        contentType: part.contentType || 'application/octet-stream',
+        contentType: part.contentType || "application/octet-stream",
         name: part.name || null,
-        size: typeof part.size === 'number' ? part.size : null,
+        size: typeof part.size === "number" ? part.size : null,
         headers: collectHeaders(part),
+        // Only kept for special-cased parts (e.g. text/x-moz-deleted, whose
+        // body text names the original attachment's headers) -- not used
+        // for display of ordinary parts, so no size/privacy concern beyond
+        // what getFull() already exposed to this extension.
+        body: typeof part.body === "string" ? part.body : null,
         isRoot: !!isRoot,
         children: groupRepeatedSiblings(children, groupThreshold),
       };
@@ -55,7 +62,10 @@ var MimeBfs = (function () {
     let i = 0;
     while (i < children.length) {
       let j = i;
-      while (j < children.length && children[j].contentType === children[i].contentType) {
+      while (
+        j < children.length &&
+        children[j].contentType === children[i].contentType
+      ) {
         j++;
       }
       const runLength = j - i;
