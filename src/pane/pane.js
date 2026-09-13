@@ -298,7 +298,6 @@
     let className = `mime-node mime-${cls.family}`;
     if (cls.shade) className += ` mime-shade-${cls.shade}`;
     if (node.isRoot) className += " mime-bold-border";
-    if (cls.deleted) className += " mime-deleted";
     chip.className = className;
     chip.dataset.bfs = String(node.bfsIndex);
 
@@ -308,10 +307,11 @@
     chip.appendChild(badge);
 
     const label = document.createElement("span");
-    label.className = "mime-label";
     // A deleted-attachment placeholder is colored/labeled as the original
-    // attachment it replaced (see MimeColors.classify), with strikethrough
-    // (from the .mime-deleted class) marking it as no longer present.
+    // attachment it replaced (see MimeColors.classify). Strikethrough goes
+    // on the label only (the content-type fragment), not the part-number
+    // badge, so it's added as a class on this span rather than the chip.
+    label.className = cls.deleted ? "mime-label mime-deleted" : "mime-label";
     label.textContent = MimeColors.shortLabel(
       cls.deleted && cls.originalContentType
         ? cls.originalContentType

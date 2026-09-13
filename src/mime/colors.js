@@ -34,12 +34,43 @@ var MimeColors = (function () {
   //
   // Pull the original content-type/name back out of that body text so the
   // placeholder can be shown (colored) as what it used to be.
+
+  // Body text normally arrives already quoted-printable-decoded (that's
+  // getFull()'s default), but defensively undo soft line-break
+  // continuations ("=" at end of line) and "=XX" hex escapes ourselves
+  // too, in case a given Thunderbird build/version hands us the raw wire
+  // form instead. This is a no-op on text that's already plain.
+  function undoQuotedPrintable(str) {
+    const unfolded = String(str).replace(/=\r?\n/g, "");
+    if (!/=[0-9A-Fa-f]{2}/.test(unfolded)) return unfolded;
+    const bytes = [];
+    for (let i = 0; i < unfolded.length; i++) {
+      const hex = unfolded.slice(i + 1, i + 3);
+      if (unfolded[i] === "=" && /^[0-9A-Fa-f]{2}$/.test(hex)) {
+        bytes.push(parseInt(hex, 16));
+        i += 2;
+      } else {
+        bytes.push(unfolded.charCodeAt(i) & 0xff);
+      }
+    }
+    try {
+      return new TextDecoder("utf-8").decode(new Uint8Array(bytes));
+    } catch (e) {
+      return unfolded;
+    }
+  }
+
   function parseDeletedAttachmentInfo(body) {
     if (!body) return null;
-    const ctMatch = body.match(/^\s*Content-Type:\s*([^\s;]+)/im);
+    const text = undoQuotedPrintable(body);
+    // Not anchored to line-start: the "original headers" block's exact
+    // layout (single-line vs folded, extra params before/after) can vary,
+    // so just look for the first Content-Type/name/filename occurrences
+    // anywhere in the body text.
+    const ctMatch = text.match(/Content-Type:\s*([^\s;,"']+)/i);
     if (!ctMatch) return null;
-    const nameMatch = body.match(
-      /^\s*(?:name|filename)\s*=\s*"?([^"\r\n]+)"?/im,
+    const nameMatch = text.match(
+      /(?:^|[;\s])(?:name|filename)\s*=\s*"?([^"\r\n;]+)"?/i,
     );
     return {
       contentType: ctMatch[1].trim(),

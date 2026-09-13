@@ -206,8 +206,10 @@
 
 /* Deleted-attachment placeholder (text/x-moz-deleted): colored as the
    original attachment type (via the usual mime-<family>/mime-shade-*
-   classes above), but struck through to mark it as no longer present. */
-.mime-node.mime-deleted {
+   classes on the chip), but with only the content-type label struck
+   through -- not the part-number badge -- to mark it as no longer
+   present. */
+.mime-label.mime-deleted {
     text-decoration: line-through;
     text-decoration-thickness: 1.5px;
 }
